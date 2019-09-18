@@ -1,10 +1,14 @@
 ﻿using System;
-using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using IPTrayApplet.Properties;
+using Newtonsoft.Json.Linq;
 
 namespace IPTrayApplet
 {
@@ -19,77 +23,86 @@ namespace IPTrayApplet
         }
     }
 
-
     public class App : ApplicationContext
     {
-        private NotifyIcon trayIcon;
+        private readonly NotifyIcon _trayIcon;
+        private static readonly HttpClient HttpClient = new HttpClient();
 
         public App()
         {
-            trayIcon = new NotifyIcon()
+            _trayIcon = new NotifyIcon
             {
                 Icon = Resources.ipcopy,
                 ContextMenu = new ContextMenu(),
                 Visible = true
             };
 
-            foreach (String s in GetIPAddresses()) // Populate menu with each IP address
+            NetworkChange.NetworkAddressChanged += RefreshAddresses;
+            SetMenuItems();
+        }
+
+        private async void SetMenuItems()
+        {
+            var addresses = await GetAddresses();
+            _trayIcon.ContextMenu.MenuItems.Clear();
+
+            if (addresses != null && addresses.Count > 0)
             {
-                trayIcon.ContextMenu.MenuItems.Add(s, CopyToClipboard);
-            }
-
-            trayIcon.ContextMenu.MenuItems.Add("Exit", Exit); // Add the Exit menu item last
-        }
-
-        private void Exit(object sender, EventArgs e)
-        {
-            trayIcon.Visible = false;
-            Application.Exit();
-        }
-
-        private void CopyToClipboard(object sender, EventArgs e)
-        {
-            var menuItem = (MenuItem) sender; // Cast the sender as menu item type in order to get text property
-            var ip = menuItem.Text.Split(' ');
-            Clipboard.SetText(ip[0]);
-        }
-
-        private ArrayList GetIPAddresses()
-        {
-            var listOfIPs = new ArrayList();
-            var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-            foreach (var network in networkInterfaces)
-            {
-                var ipProperties = network.GetIPProperties();
-
-                foreach (var address in ipProperties.UnicastAddresses)
+                foreach (var address in addresses)
                 {
-                    if (address.Address.AddressFamily == AddressFamily.InterNetwork
-                        && !(IPAddress.IsLoopback(address.Address))
-                        && !IsPrivate(address.Address.GetAddressBytes()[0])) // Only add non-private IPv4 addresses
-                    {
-                        listOfIPs.Add(address.Address.ToString() + " (" + network.Name + ")");
-                    }
-                    
+                    _trayIcon.ContextMenu.MenuItems.Add(address, CopyToClipboard);
                 }
             }
-            // Add public IP via HTTP GET request
-            String[] getRequest = new WebClient().DownloadString("http://checkip.dyndns.org/").Split(':');
-            getRequest = getRequest[1].Split('<');
-            String externalIP = getRequest[0].Trim(' ') + " (Public IP)";
-            listOfIPs.Add(externalIP);
+
+            _trayIcon.ContextMenu.MenuItems.Add("Exit", Exit);
+        }
+
+
+        private static void CopyToClipboard(object sender, EventArgs e)
+        {
+            var menuItem = sender as MenuItem;
+            var ip = menuItem?.Text.Split(' ');
+            if (ip != null) Clipboard.SetText(ip[0]);
+        }
+
+        private static async Task<List<string>> GetAddresses()
+        {
+            var listOfIPs = new List<string>();
+            var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+
+
+            foreach (var networkInterface in networkInterfaces)
+            {
+                foreach (var address in networkInterface.GetIPProperties().UnicastAddresses)
+                {
+                    if (address.Address.AddressFamily == AddressFamily.InterNetwork
+                        && !IPAddress.IsLoopback(address.Address) // Ignore loopback
+                        && !IsPrivateAddress(address.Address.GetAddressBytes()[0])
+                    ) // Only add non-private IPv4 addresses
+                    {
+                        listOfIPs.Add(address.Address + " (" + networkInterface.Name + ")");
+                    }
+                }
+            }
+
+            try
+            {
+                {
+                    var response = await HttpClient.GetAsync("https://api.ipify.org/?format=json");
+                    var stringResult = await response.Content.ReadAsStringAsync();
+                    listOfIPs.Add($"{JObject.Parse(stringResult).SelectToken("ip")} (Public)");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
             return listOfIPs;
         }
 
-        private bool IsPrivate(byte b)
-        {
-            var privateIPList = new byte[] { 127, 169, 172 };
-            foreach(var prefix in privateIPList)
-            {
-                if (prefix == b) return true;
-            }
-            return false;
-        }
+        private void RefreshAddresses(object sender, EventArgs e) => SetMenuItems();
+        private static void Exit(object sender, EventArgs e) => Application.Exit();
+        private static bool IsPrivateAddress(byte b) => new byte[] {127, 169, 172}.Any(prefix => prefix == b);
     }
 }
