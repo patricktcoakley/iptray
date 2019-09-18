@@ -87,11 +87,9 @@ namespace IPTrayApplet
 
             try
             {
-                {
-                    var response = await HttpClient.GetAsync("https://api.ipify.org/?format=json");
-                    var stringResult = await response.Content.ReadAsStringAsync();
-                    listOfIPs.Add($"{JObject.Parse(stringResult).SelectToken("ip")} (Public)");
-                }
+                var response = await HttpClient.GetAsync("https://api.ipify.org/?format=json");
+                var stringResult = await response.Content.ReadAsStringAsync();
+                listOfIPs.Add($"{JObject.Parse(stringResult).SelectToken("ip")} (Public)");
             }
             catch (Exception e)
             {
