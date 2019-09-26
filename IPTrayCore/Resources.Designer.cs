@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace IPTrayApplet.Properties {
+namespace IPTrayCore {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace IPTrayApplet.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("IPTrayApplet.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("IPTrayCore.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -63,9 +63,9 @@ namespace IPTrayApplet.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
-        internal static System.Drawing.Icon ipcopy {
+        internal static System.Drawing.Icon iptray {
             get {
-                object obj = ResourceManager.GetObject("ipcopy", resourceCulture);
+                object obj = ResourceManager.GetObject("iptray", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }
