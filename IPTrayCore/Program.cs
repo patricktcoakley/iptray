@@ -78,12 +78,18 @@ namespace IPTrayCore {
         }
 
         private static void RefreshAddresses(object sender, EventArgs e) => SetMenuItems();
-        private static void Exit(object sender, EventArgs e) => Application.Exit();
+
+
         private static bool IsPrivateAddress(byte b) => new byte[] {127, 169, 172}.Any(prefix => prefix == b);
 
         private static bool IsValidAddress(UnicastIPAddressInformation address) =>
             address.Address.AddressFamily == AddressFamily.InterNetwork
             && !IPAddress.IsLoopback(address.Address) // Ignore loopback
             && !IsPrivateAddress(address.Address.GetAddressBytes()[0]); // Only add non-private IPv4 addresses;
+
+        private static void Exit(object sender, EventArgs e) {
+            TrayIcon.Dispose();
+            Application.Exit();
+        }
     }
 }
