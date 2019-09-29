@@ -4,6 +4,8 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>iptray.ico</ApplicationIcon>
+    <StartupObject>IPTrayCore.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
