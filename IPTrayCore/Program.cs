@@ -1,19 +1,19 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using IPTrayCore.Properties;
+using Newtonsoft.Json.Linq;
 
 namespace IPTrayCore {
     public static class Program {
         [STAThread]
         public static void Main() {
-            Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new App());
@@ -69,7 +69,7 @@ namespace IPTrayCore {
             try {
                 var response = await HttpClient.GetAsync("https://api.ipify.org/?format=json");
                 var stringResult = await response.Content.ReadAsStringAsync();
-                listOfIPs.Add($"{JsonDocument.Parse(stringResult).RootElement.GetProperty("ip")} (Public)");
+                listOfIPs.Add($"{JObject.Parse(stringResult).SelectToken("ip")} (Public)");
             } catch (Exception e) {
                 Console.WriteLine(e); // TODO replace with logger
             }
@@ -80,6 +80,7 @@ namespace IPTrayCore {
         private static void RefreshAddresses(object sender, EventArgs e) => SetMenuItems();
         private static void Exit(object sender, EventArgs e) => Application.Exit();
         private static bool IsPrivateAddress(byte b) => new byte[] {127, 169, 172}.Any(prefix => prefix == b);
+
         private static bool IsValidAddress(UnicastIPAddressInformation address) =>
             address.Address.AddressFamily == AddressFamily.InterNetwork
             && !IPAddress.IsLoopback(address.Address) // Ignore loopback
